@@ -382,7 +382,7 @@ See [VALIDATION_GUIDE.md](VALIDATION_GUIDE.md) for:
 ### Workflow Management
 See [WORKFLOW_GUIDE.md](WORKFLOW_GUIDE.md) for:
 - n8n_create_workflow
-- n8n_update_partial_workflow (18 operation types!)
+- n8n_update_partial_workflow (19 operation types including patchNodeField!)
 - Smart parameters (branch, case)
 - AI connection types (8 types)
 - Workflow activation (activateWorkflow/deactivateWorkflow)

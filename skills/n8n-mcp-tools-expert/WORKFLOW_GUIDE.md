@@ -83,35 +83,36 @@ n8n_create_workflow({
 
 **Common pattern**: 56s average between edits (iterative building!)
 
-### 18 Operation Types
+### 19 Operation Types
 
-**Node Operations** (6 types):
+**Node Operations** (7 types):
 1. `addNode` - Add new node
 2. `removeNode` - Remove node by ID or name
 3. `updateNode` - Update node properties (use dot notation)
-4. `moveNode` - Change position
-5. `enableNode` - Enable disabled node
-6. `disableNode` - Disable active node
+4. `patchNodeField` - Surgical string edits via strict find/replace (see below)
+5. `moveNode` - Change position
+6. `enableNode` - Enable disabled node
+7. `disableNode` - Disable active node
 
 **Connection Operations** (5 types):
-7. `addConnection` - Connect nodes (supports smart params)
-8. `removeConnection` - Remove connection (supports ignoreErrors)
-9. `rewireConnection` - Change connection target
-10. `cleanStaleConnections` - Auto-remove broken connections
-11. `replaceConnections` - Replace entire connections object
+8. `addConnection` - Connect nodes (supports smart params)
+9. `removeConnection` - Remove connection (supports ignoreErrors)
+10. `rewireConnection` - Change connection target
+11. `cleanStaleConnections` - Auto-remove broken connections
+12. `replaceConnections` - Replace entire connections object
 
 **Metadata Operations** (4 types):
-12. `updateSettings` - Workflow settings
-13. `updateName` - Rename workflow
-14. `addTag` - Add tag
-15. `removeTag` - Remove tag
+13. `updateSettings` - Workflow settings
+14. `updateName` - Rename workflow
+15. `addTag` - Add tag
+16. `removeTag` - Remove tag
 
 **Activation Operations** (2 types):
-16. `activateWorkflow` - Activate workflow for automatic execution
-17. `deactivateWorkflow` - Deactivate workflow
+17. `activateWorkflow` - Activate workflow for automatic execution
+18. `deactivateWorkflow` - Deactivate workflow
 
 **Project Management Operations** (1 type):
-18. `transferWorkflow` - Transfer workflow to a different project (enterprise/cloud)
+19. `transferWorkflow` - Transfer workflow to a different project (enterprise/cloud)
 
 ### Intent Parameter (IMPORTANT!)
 
@@ -223,6 +224,97 @@ Remove properties by setting them to `null`:
   }
 }
 ```
+
+### patchNodeField (Surgical String Edits)
+
+Use `patchNodeField` for strict find/replace edits on string fields — code, HTML, email templates, JSON bodies. Unlike `updateNode` with `__patch_find_replace` (which silently warns on misses), `patchNodeField` is strict: it errors if the find string is not found, and errors if multiple matches are found (preventing ambiguous replacements).
+
+**When to use which**:
+- `patchNodeField` — preferred for most string edits. Strict error handling catches mistakes early.
+- `updateNode` with `__patch_find_replace` — legacy approach. Tolerant (warns but continues on miss). Use only when you want lenient behavior.
+
+**Syntax**:
+```javascript
+{
+  type: "patchNodeField",
+  nodeName: "Code",           // or nodeId
+  fieldPath: "parameters.jsCode",  // Dot-notation path to the string field
+  patches: [
+    {
+      find: "const limit = 10;",
+      replace: "const limit = 50;",
+      replaceAll: false,       // Default: false. Set true to replace all occurrences
+      regex: false             // Default: false. Set true to treat find as regex
+    }
+  ]
+}
+```
+
+**Examples**:
+```javascript
+// Basic strict find/replace in code
+n8n_update_partial_workflow({
+  id: "wf-123",
+  intent: "Update API limit",
+  operations: [{
+    type: "patchNodeField",
+    nodeName: "Code",
+    fieldPath: "parameters.jsCode",
+    patches: [{find: "const limit = 10;", replace: "const limit = 50;"}]
+  }]
+})
+
+// Replace all occurrences of a URL
+n8n_update_partial_workflow({
+  id: "wf-123",
+  intent: "Migrate API domain",
+  operations: [{
+    type: "patchNodeField",
+    nodeName: "Code",
+    fieldPath: "parameters.jsCode",
+    patches: [{find: "api.old.com", replace: "api.new.com", replaceAll: true}]
+  }]
+})
+
+// Regex-based replacement (whitespace-insensitive)
+n8n_update_partial_workflow({
+  id: "wf-123",
+  intent: "Update limit with regex",
+  operations: [{
+    type: "patchNodeField",
+    nodeName: "Code",
+    fieldPath: "parameters.jsCode",
+    patches: [{find: "const\\s+limit\\s*=\\s*\\d+", replace: "const limit = 100", regex: true}]
+  }]
+})
+
+// Multiple sequential patches on an email template
+n8n_update_partial_workflow({
+  id: "wf-123",
+  intent: "Update email footer",
+  operations: [{
+    type: "patchNodeField",
+    nodeName: "Set Email",
+    fieldPath: "parameters.assignments.assignments.6.value",
+    patches: [
+      {find: "© 2025", replace: "© 2026"},
+      {find: "<p>Unsubscribe</p>", replace: ""}
+    ]
+  }]
+})
+```
+
+**Error behavior** (this is what makes it strict):
+- **Find string not found** → operation fails with error (not a silent warning)
+- **Multiple matches without `replaceAll`** → operation fails (ambiguity detected)
+- Patches are applied sequentially — order matters
+
+**Security limits**:
+- Max 50 patches per operation
+- Regex patterns capped at 500 characters
+- Regex only on fields under 512KB
+- ReDoS-safe: rejects nested quantifiers like `(a+)+` and overlapping alternations like `(\w|\d)+`
+- Prototype pollution protection on field paths
 
 ### Activation Operations
 
@@ -601,14 +693,15 @@ update → update → update → ... (56s avg between edits)
 ## Summary
 
 **Most Important**:
-1. **n8n_update_partial_workflow** is most-used tool (38,287 uses)
+1. **n8n_update_partial_workflow** is most-used tool (38,287 uses, 19 operation types)
 2. Include **intent** parameter for better responses
 3. Workflows built **iteratively** (56s avg between edits)
 4. Use **smart parameters** (branch="true", case=0) for clarity
-5. **AI connections** supported (8 types with sourceOutput)
-6. **Workflow activation** supported via API (`activateWorkflow` operation)
-7. **Auto-sanitization** runs on all operations
-8. Use **n8n_deploy_template** for quick starts
+5. **patchNodeField** for surgical string edits (strict find/replace with regex support)
+6. **AI connections** supported (8 types with sourceOutput)
+7. **Workflow activation** supported via API (`activateWorkflow` operation)
+8. **Auto-sanitization** runs on all operations
+9. Use **n8n_deploy_template** for quick starts
 
 **Additional Tools**:
 - `n8n_deploy_template` - Deploy templates directly
