@@ -94,6 +94,12 @@ The n8n-mcp server provides these unified tools:
 ### Data Tables
 - `n8n_manage_datatable` - Manage data tables and rows (CRUD, filtering, dry-run)
 
+### Credential Management
+- `n8n_manage_credentials` - Full credential CRUD (list, get, create, update, delete) + schema discovery (`getSchema`)
+
+### Security & Audit
+- `n8n_audit_instance` - Security audit combining n8n built-in audit (5 risk categories) + custom deep scan (hardcoded secrets, unauthenticated webhooks, error handling, data retention)
+
 ### Templates
 - `search_templates` - Multiple modes (keyword, by_nodes, by_task, by_metadata)
 - `get_template` - Get template details

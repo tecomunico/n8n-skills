@@ -754,7 +754,8 @@ For comprehensive error catalogs and false positive examples:
 3. Review warnings and decide if acceptable
 4. Deploy with confidence
 
-**Related Skills**:
+**Related Skills & Tools**:
 - n8n MCP Tools Expert - Use validation tools correctly
 - n8n Expression Syntax - Fix expression errors
 - n8n Node Configuration - Understand required fields
+- `n8n_audit_instance` - Proactive security validation (hardcoded secrets, unauthenticated webhooks, missing error handling, data retention)
